@@ -1,0 +1,655 @@
+/*
+Skating Monkey Software LLC
+"Creating overly complex solutions to you simple project
+requirements since 2018"
+Miyagi Car wash Program
+Lead developer:					Mariah Belcher
+Destructive testing consultant: Sean Crews
+
+This program provides automated car wash control via text driven menus.
+The following menus are available: car wash type and employee.
+All input and output is saved to a text file to provide a customer
+receipt and sent to a vectored array for record keeping and accounting purposes.
+
+Due to time constraints, only basic functionality has been fully
+developed for this program.
+
+***CAUTION: this program was developed specifically to operate on a ten
+digit keypad. Entry of ANY character or string outside of the scope provided
+by the menus will, in technical terms, HOSE the program.
+*/
+#include "stdafx.h"
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <iterator>
+#include <algorithm>
+
+using namespace std;
+
+//**********************************************************************//
+//This is to read the text file that contains the phone numbers
+fstream infile{ "phoneNum.txt" };
+istream_iterator<long long> infile_begin{ infile };
+istream_iterator<long long> eof{};
+//Initialization of the new vector for the phone numbers.  
+//It is filled in from the phoneNum.txt file
+vector<long long> phoneNums{ infile_begin, eof };
+//New Function Prototypes
+void selectionSort(vector<long long>&, long long); //Sorts the phone number vector ascending
+void showData(vector<long long>, long long); //This is included incase someone needs to verify data in the phone number vector
+long long retrievePhoneNum(long long);
+long long binarySearch(vector<long long>, long long, long long); // search for the phone num in the vector
+//new variable initialization
+long long cPhoneNum, results;
+long long phoneSize = phoneNums.size();
+//************************************************************************//
+
+
+//Function prototypes
+double washA(double);
+double washB(double);
+double washC(double);
+void welcomeMessage();
+void washMenu(int);
+void employeeMenu(int);
+void paymentMenu(int);
+//void maintMenu();
+/*maintMenu function was intended to provide additional functionality in
+the car wash program including: reprinting of receipts, printing of daily
+bookkeeping reports, printing of consumable supply quantities, and a
+system fault reset capability.
+*/
+
+int washChoice, empChoice, paymentChoice;
+double total;
+const double State_Tax = 0.0775;
+//int maintCall = 0,
+//	oopsCount = 0;
+/*
+maintCall and oopsCount variables are explained in more detail below
+*/
+
+//This is the variables needed for the receipt and bookkeeping data
+ofstream outputFile;
+ofstream outputFileB;
+string fileData;
+
+//Vectors Initialized with the optional types of payments and the car wash types
+vector<string> paymentType{ "Visa", "Mastercard", "American Express", "Cash" };
+vector<string> washType{ "Standard wash", "Wash and wax", "Wash and detail" };
+
+//Parallel Arrays Initialized with employee numbers.  
+string employeeNum[] = { "e1fg58", "e1gl25", "e1im45", "e1ln89", "e1ab22" };
+//Parallel 2D Arrays Initialized with selection and employee names.
+//the selection (i.e. 10, 20, 30, etc) links to the employee number in the first initialized
+//parallel array.
+string employeeData[5][2] =
+{
+	{ "10", "Hideo" },
+	{ "20", "Vanya" },
+	{ "30", "Giuseppe" },
+	{ "40", "Juan" },
+	{ "50", "Sam" }
+};
+
+int main()
+{
+rerun:
+	/*
+	rerun and goto were used in this program because use of other loop styles
+	caused undesired operation and/or lack of functionality throughout the program.
+	Strangely, there is no mention of this style loop in the textbook.
+	*/
+
+	//int maintCall = 0,
+	//	oopsCount = 0;
+	/*
+	initialization of manual maintenance menu trigger and invalid entry counter
+	*/
+
+	//	cin >> maintCall;
+	/*
+	This line of code was intended to manually call the
+	*/
+
+	//for (int count = 0; count < 1; count--)
+	//{
+	/*
+	original for loop initialized to run infinitely. Clears receipt text
+	file with each iteration.
+	*/
+
+
+	//while (maintCall == 0 && oopsCount < 4)
+	//{
+	//washMenu(washChoice);
+	//}
+
+	//while (maintCall == 0 && oopsCount < 4)
+	//{
+	//employeeMenu(empChoice);
+	//}
+
+	//while (maintCall == 0 && oopsCount < 4)
+	//{
+	//paymentMenu(paymentChoice);
+	//}
+
+	//if (oopsCount >= 4 || maintCall == 8080)
+	//{
+	//maintMenu();
+	//}
+	/*
+	original while loops designed to run in conjunction with infinite for loop
+	and use integer flags for error catch and reporting and with "reasonable"
+	arbitrary values to avoid inadvertent customer access via keypad
+	*/
+
+	int	rerunEnable;
+	//opens and writes to bookkeeping text file from arrays
+	outputFileB.open("Bookkeeping.txt", ofstream::out | ofstream::app);
+	//opens and writes to receipt text file from arrays
+	outputFile.open("Diversity_receipt.txt");
+
+	//function call to welcome screen
+	welcomeMessage();
+
+	// sort the "New" vector **************************
+	selectionSort(phoneNums, phoneSize);
+
+	//Retrieve the phone number and search ******************
+	retrievePhoneNum(cPhoneNum);
+
+	//function call to wash choice menu 
+	washMenu(washChoice);
+	//function call to employee select menu
+	employeeMenu(empChoice);
+	//function call to payment menu
+	paymentMenu(paymentChoice);
+	//closes receipt text file
+	outputFile.close();
+	//closes bookkeeping text file
+	outputFileB.close();
+	cout << "Your receipt will print below.\n";
+	//initiates rerun loop and clears receipt data
+	cout << "Press 0 to when done.\n";
+	cin >> rerunEnable;
+
+	//receipt.txt must be viewed before initiating rerun
+	//loop. Rerun clears file data until the loop has completed.
+	if (rerunEnable == 0)
+
+		goto rerun;
+
+	return 0;
+}
+
+/*
+begin function definitions
+*/
+
+//calculates value of standard wash
+double washA(double State_Tax)
+{
+	return (5.95 * State_Tax) + 5.95;
+}
+
+//calculates value of wash and wax
+double washB(double State_Tax)
+{
+	return (8.95 * State_Tax) + 8.95;
+}
+
+//calculates value of detail wash
+double washC(double State_Tax)
+{
+	return (17.95 * State_Tax) + 17.95;
+}
+
+//first function outputs message to screen and to receipt
+void welcomeMessage()
+{
+
+	cout << "\nWelcome to Diversity car wash.\n\n";
+	outputFile << "\t\tWelcome to Diversity car wash\n";
+	outputFile << "\t\t-----------------------------\n";
+}
+
+void washMenu(int washChoice)
+{
+	/*
+	Menu1Start label used for invalid entry loop within this function.
+	This feature is used in each menu containing function.
+	*/
+Menu1Start:
+
+
+	//int oopsCount = 0;
+	/*
+	initializes variable intended for error reporting
+	*/
+
+	const int Standardwash = 1,
+		Waxwash = 2,
+		Detailwash = 3;
+
+	cout << "Please select your wash\n";
+	cout << "from the following menu options.\n";
+	cout << "1. Standard wash\n";
+	cout << "2. Wash and wax\n";
+	cout << "3. Wash and detail\n";
+	cin >> washChoice;
+
+	if (washChoice == 1)
+	{
+		//This provides the total from the function that calculates it.
+		total = washA(State_Tax);
+		//sets the decimal place to 2 digits on the screen
+		cout << fixed << showpoint << setprecision(2);
+		//this calls the wash type from the vector washType
+		cout << "You have requested a " << washType.at(0) << ".\n";
+		//This calls the total from above
+		cout << "Your car wash total is: $" << total << "\n\n" << endl;
+		//This sets the decimal to two decimals in the receipt
+		outputFile << fixed << showpoint << setprecision(2);
+		outputFile << "You selected standard wash.\n";
+		//This inserts the total in the reciept.
+		outputFile << "Your car wash total is: $" << total << endl;
+		//This inserts the #1 indicating a standard wash in the bookkeepers log
+		outputFileB << "1\t";
+		//This sets the decimal place to 2 in the bookkeepers log
+		outputFileB << fixed << showpoint << setprecision(2);
+		//This inserts the total amount into the bookkeepers log
+		outputFileB << "$" << total << " \t";
+	}
+	else if (washChoice == 2)
+	{
+		total = washB(State_Tax);
+		cout << fixed << showpoint << setprecision(2);
+		cout << "You have requested a " << washType.at(1) << ".\n";
+		cout << "Your car wash total is: $" << total << "\n\n" << endl;
+		outputFile << fixed << showpoint << setprecision(2);
+		outputFile << "You selected wash and wax.\n";
+		outputFile << "Your car wash total is: $" << total << endl;
+		outputFileB << fixed << showpoint << setprecision(2);
+		outputFileB << "2\t";
+		outputFileB << "$" << total << " \t";
+	}
+	else if (washChoice == 3)
+	{
+		total = washC(State_Tax);
+		cout << fixed << showpoint << setprecision(2);
+		cout << "You have requested a " << washType.at(2) << ".\n";
+		cout << "Your car wash total is: $" << total << "\n\n" << endl;
+		outputFile << fixed << showpoint << setprecision(2);
+		outputFile << "You selected wash and detail.\n";
+		outputFile << "Your car wash total is: $" << total << endl;
+		outputFileB << fixed << showpoint << setprecision(2);
+		outputFileB << "3\t";
+		outputFileB << "$" << total << " \t";
+	}
+	else
+		goto Menu1Start;
+	/*Requirements for the project require if/else statement.  I think a switch is cleaner so I left the switch code.
+	switch (washChoice)
+	{
+
+	case 1:
+	//This provides the total from the function that calculates it.
+	total = washA(State_Tax);
+	//sets the decimal place to 2 digits on the screen
+	cout << fixed << showpoint << setprecision(2);
+	//this calls the wash type from the vector washType
+	cout << "You have requested a " << washType.at(0) << ".\n";
+	//This calls the total from above
+	cout << "Your car wash total is: $" << total << "\n\n" << endl;
+	//This sets the decimal to two decimals in the receipt
+	outputFile << fixed << showpoint << setprecision(2);
+	outputFile << "You selected standard wash.\n";
+	//This inserts the total in the receipt.
+	outputFile << "Your car wash total is: $" << total << endl;
+	//This inserts the #1 indicating a standard wash in the bookkeepers log
+	outputFileB << "1\t";
+	//This sets the decimal place to 2 in the bookkeepers log
+	outputFileB << fixed << showpoint << setprecision(2);
+	//This inserts the total amount into the bookkeepers log
+	outputFileB << "$" << total << " \t";
+	break;
+
+	case 2:
+	total = washB(State_Tax);
+	cout << fixed << showpoint << setprecision(2);
+	cout << "You have requested a " << washType.at(1) << ".\n";
+	cout << "Your car wash total is: $" << total << "\n\n" << endl;
+	outputFile << fixed << showpoint << setprecision(2);
+	outputFile << "You selected wash and wax.\n";
+	outputFile << "Your car wash total is: $" << total << endl;
+	outputFileB << fixed << showpoint << setprecision(2);
+	outputFileB << "2\t";
+	outputFileB << "$" << total << " \t";
+	break;
+
+	case 3:
+	total = washC(State_Tax);
+	cout << fixed << showpoint << setprecision(2);
+	cout << "You have requested a " << washType.at(2) << ".\n";
+	cout << "Your car wash total is: $" << total << "\n\n" << endl;
+	outputFile << fixed << showpoint << setprecision(2);
+	outputFile << "You selected wash and detail.\n";
+	outputFile << "Your car wash total is: $" << total << endl;
+	outputFileB << fixed << showpoint << setprecision(2);
+	outputFileB << "3\t";
+	outputFileB << "$" << total << " \t";
+	break;
+
+	default:
+	cout << "Invalid menu option\n";
+	cout << "Please enter the type of car wash you want.\n";
+
+	//goto statement restarts the function for each invalid entry
+
+	*/
+	//goto Menu1Start;
+
+	//	oopsCount++;
+
+	//if (oopsCount >= 4)
+	//{
+	//	maintMenu();
+	//}
+	/*
+	in conjunction with oopsCount variable and incrementation, the above block of code
+	would call the maintenance menu function after 4 invalid entries. This code was
+	repeated in each function, however conflicting return values made this feature
+	impractical to fully implement within the alloted time for this project.
+	*/
+
+}
+
+void employeeMenu(int empChoice)
+{
+Menu2Start:
+
+	const int Emp_Hideo = 10,
+		Emp_Vanya = 20,
+		Emp_Giuseppe = 30,
+		Emp_Juan = 40,
+		Emp_Sam = 50,
+		Emp_Quit = 60;
+
+	cout << "Please select the employee you choose to wash your car\n";
+	cout << "from the following menu options.\n";
+	cout << "10. Hideo\n";
+	cout << "20. Vanya\n";
+	cout << "30. Giuseppe\n";
+	cout << "40. Juan\n";
+	cout << "50. Sam\n";
+	cin >> empChoice;
+
+	switch (empChoice)
+	{
+	case Emp_Hideo:
+		//This calls the employee name from the employee array
+		cout << "You have requested " << employeeData[0][1] << " to wash your car.\n\n";
+		//This calls the employee name on the receipt
+		outputFile << "\nThe person assisting you today will be " << employeeData[0][1] << ".\n\n";
+		//This inserts the employee number from the employee vector
+		outputFileB << employeeNum[0] << "\t";
+		break;
+	case Emp_Vanya:
+		cout << "You have requested " << employeeData[1][1] << " to wash your car\n\n";
+		outputFile << "\nThe person assisting you today will be " << employeeData[1][1] << ".\n\n";
+		outputFileB << employeeNum[1] << "\t";
+		break;
+	case Emp_Giuseppe:
+		cout << "You have requested " << employeeData[2][1] << " to wash your car\n\n";
+		outputFile << "\nThe person assisting you today will be " << employeeData[2][1] << ".\n\n";
+		outputFileB << employeeNum[2] << "\t";
+		break;
+	case Emp_Juan:
+		cout << "You have requested " << employeeData[3][1] << " to wash your car\n\n";
+		outputFile << "\nThe person assisting you today will be " << employeeData[3][1] << ".\n\n";
+		outputFileB << employeeNum[3] << "\t";
+		break;
+	case Emp_Sam:
+		cout << "You have requested " << employeeData[4][1] << " to wash your car\n\n";
+		outputFile << "\nThe person assisting you today will be " << employeeData[4][1] << ".\n\n";
+		outputFileB << employeeNum[4] << "\t";
+		break;
+	default:
+		cout << "Invalid menu option\n";
+		cout << "Please enter the employee you'd like to wash your car.\n";
+		goto Menu2Start;
+
+	}
+}
+
+void paymentMenu(int paymentChoice)
+{
+Menu3Start:
+
+	const int visa = 1,
+		mastercard = 2,
+		amex = 3,
+		cash = 4;
+
+	cout << "Please select the payment method\n";
+	cout << "from the following menu options.\n";
+	cout << "1. Visa\n";
+	cout << "2. Mastercard\n";
+	cout << "3. American Express\n";
+	cout << "4. Cash\n";
+
+	cin >> paymentChoice;
+
+	switch (paymentChoice)
+	{
+	case visa:
+		//This inserts the payment type on the screen from the payment type vector
+		cout << "You have requested " << paymentType.at(0) << " as your payment method.\n\n";
+		cout << "Please insert your card below and follow the prompts on the screen.\n";
+		cout << "Once your transaction is completed please take your receipt to the attendant.\n";
+		//This inserts the payment type into the receipt from the vector
+		outputFile << "The method of payment you chose is " << paymentType.at(0) << ".\n";
+		outputFile << "\n Please take this receipt to the attendant.";
+		//This inserts the payment type from the vector into the receipt
+		outputFileB << paymentType.at(0) << "\n";
+		break;
+
+	case mastercard:
+		cout << "You have requested " << paymentType[1] << " as your payment amount\n\n";
+		cout << "Please insert your card below and follow the prompts on the screen.\n";
+		cout << "Once your transaction is completed please take your receipt to the attendant.\n";
+		outputFile << "The method of payment you chose is " << paymentType.at(1) << ".\n";
+		outputFile << "\n Please take this receipt to the attendant.";
+		outputFileB << paymentType.at(1) << "\n";
+		break;
+
+	case amex:
+		cout << "You have requested " << paymentType[2] << " as your payment amount\n\n";
+		cout << "Please insert your card below and follow the prompts on the screen.\n";
+		cout << "Once your transaction is completed please take your receipt to the attendant.\n";
+		outputFile << "The method of payment you chose is " << paymentType.at(2) << ".\n";
+		outputFile << "\n Please take this receipt to the attendant.";
+		outputFileB << paymentType.at(2) << "\n";
+		break;
+
+	case cash:
+		cout << "You have requested " << paymentType[3] << " as your payment amount\n\n";
+		cout << "Please insert your cash below and follow the prompts on the screen.\n";
+		cout << "Once your transaction is completed please take your receipt to the attendant.\n";
+		outputFile << "The method of payment you chose is " << paymentType.at(3) << ".\n";
+		outputFile << "\n Please take this receipt to the attendant.";
+		outputFileB << paymentType.at(3) << "\n";
+		break;
+
+	default:
+		cout << "Invalid menu option\n";
+		cout << "Please enter your payment type.\n";
+		goto Menu3Start;
+	}
+}
+
+/*
+below is the function definition for the unused maintMenu function
+*/
+/*
+void maintMenu()
+{
+int access_Code = 8080,
+//initialized int allows manual access to maint menu
+maintChoice;
+//int allows selection of maintenance menu options
+const int Last_Receipt = 1,
+Daily_Receipt = 2,
+Supply_Qty = 3,
+Fault_Reset = 4;
+
+
+cout << "System fault!\nPlease see attendant for assistance.\n";
+cout << "Enter access code to view maintenance menu.\n";
+//outputs on-screen message to customer if number of invalid entries
+//exceeds limit. Limit was defined in other menu containing functions
+//as oopsCount variable.
+
+cin >> access_Code;
+
+if (access_Code = 8080)
+{
+cout << "Please choose one of the following options:\n";
+cout << "1. print last receipt.\n";
+cout << "2. Print daily bookkeeping record.\n";
+cout << "3. Print consumable supply quantities.\n";
+cout << "4. Reset system fault.\n";
+}
+
+cin >> maintChoice;
+
+switch (maintChoice)
+{
+case Last_Receipt:
+cout << "See commented code for information.\n";
+//send last receipt to printer with inputfile
+break;
+
+case Daily_Receipt:
+cout << "See commented code for information.\n";
+//send daily record to printer with inputfile
+break;
+
+case Supply_Qty:
+cout << "See commented code for information.\n";
+//send supply quantities to printer based on number and type of
+//car washes performed and calculated estimates of soap, wax,
+//rinse agent, and other consumables.
+break;
+
+case Fault_Reset:
+cout << "Enter system reset code.\n";
+cin >> resetCode;
+//provides a secure method of resetting system faults to reduce after-hours
+//tampering by vandals and mischievous teens.
+if (resetCode == 12345)
+{
+cout << "That sounds like the combination an idiot would ";
+cout >> "have on his luggage!\n";
+//Might as well have a laugh with non-functioning code. Mel Brooks rocks!
+welcomeMessage();
+//Calls first function to reset the system.
+}
+else
+cout >> "Invalid entry!\nGo read the manual for this car wash,
+cout >> "bonehead!\n";
+//invalid entry message for security code
+}
+}
+*/
+// Retrieves the phone number and searches to see if carwash is free********************************
+long long retrievePhoneNum(long long cPhoneNum)
+{
+	//long long phoneSize = phoneNums.size;
+	cout << "Please enter your phone number: ";
+	cin >> cPhoneNum;
+
+	results = binarySearch(phoneNums, phoneSize, cPhoneNum);
+
+	if (results == -1)
+		cout << "That phone number does not exist in our system." << endl;
+	else
+	{
+		cout << "Welcome Back." << endl;
+		if (count(phoneNums.begin(), phoneNums.end(), cPhoneNum) % 10 == 0)
+		{
+			cout << "This is the 10th car wash you have purchased." << endl;
+			cout << "You are entitled to a Free Wash and Wax." << endl;
+		}
+		else
+			cout << "This is not your 10th car wash and it will not be free" << endl;
+	}
+
+	// Display the count of each number.
+	cout << "You have bought ";
+	cout << count(phoneNums.begin(), phoneNums.end(), cPhoneNum) << " car washes" << endl;
+
+	return count(phoneNums.begin(), phoneNums.end(), cPhoneNum);
+}
+
+//Binary Search for the phone number ***********************************************************
+long long binarySearch(vector<long long> phoneNums, long long phoneSize, long long value)
+{
+	long long first = 0, // First array element
+		last = phoneSize - 1, // Last array element
+		middle, // Midpoint of search
+		position = -1; // Position of search value
+	bool found = false; // Flag
+	while (!found && first <= last)
+	{
+		middle = (first + last) / 2; // Calculate midpoint
+		if (phoneNums[middle] == value) // If value is found at mid
+		{
+			found = true;
+			position = middle;
+		}
+		else if (phoneNums[middle] > value) // If value is in lower half
+			last = middle - 1;
+		else
+			first = middle + 1; // If value is in upper half
+	}
+	return position;
+}
+
+//Selection Sort of the phone number vector ******************************************************
+void selectionSort(vector<long long>& phoneNums, long long phoneSize)
+{
+	long long startScan, minIndex, minValue;
+	for (startScan = 0; startScan < (phoneSize - 1); startScan++)
+	{
+		minIndex = startScan;
+		minValue = phoneNums[startScan];
+		for (long long index = startScan + 1; index < phoneSize; index++)
+		{
+			if (phoneNums[index] < minValue)
+			{
+				minValue = phoneNums[index];
+				minIndex = index;
+			}
+		}
+		phoneNums[minIndex] = phoneNums[startScan];
+		phoneNums[startScan] = minValue;
+	}
+}
+//Currently this is not being used, however for trouble shooting and debugging I left this in.  
+//It shows the data in the phone number vector
+void showData(vector<long long> phoneNums, long long phoneSize)
+{
+	for (long long count = 0; count < phoneSize; count++)
+		cout << phoneNums[count] << " " << endl;
+}
+
+
+
+
+
